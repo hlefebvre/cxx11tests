@@ -20,6 +20,7 @@ sub new()
   my $ext = shift || 'cpp';
   my $compiler = shift || 'g++';
   
+  # Save arguments and init member variables
   my $this = {
     root_dir => $root_dir,
     build_dir => $build_dir,
@@ -74,20 +75,34 @@ sub create_makefile_header()
 {
   my $self = shift;
   $self->{makefile_header} = [];
+  # Get configuration options
   my $CXX = $ENV{CXX} || $self->{compiler};
   my $CPPFLAGS = $ENV{CPPFLAGS} || '';
   my $CXXFLAGS = $ENV{CXXFLAGS} || '';
 
+  # Add command that can be used to recreate the same Makefile
   push @{$self->{makefile_header}}, "# Command to regenerate this Makefile:";
   push @{$self->{makefile_header}}, "# CXX=$CXX CPPFLAGS=$CPPFLAGS CXXFLAGS=$CXXFLAGS";
   push @{$self->{makefile_header}}, "";
+
+  # Add directories and executables
   push @{$self->{makefile_header}}, "ROOT := ".$self->{root_dir};
   push @{$self->{makefile_header}}, "SRC := ".$self->{source_dir};
   push @{$self->{makefile_header}}, "BLD := ".$self->{build_dir};
   push @{$self->{makefile_header}}, "RT := \$(ROOT)/runtest.pl";
+
+  # Add compiler executable if specified
   push @{$self->{makefile_header}}, "CXX := $CXX";
+
+  # Add preprocessor flags if specified
   push @{$self->{makefile_header}}, "CPPFLAGS := $CPPFLAGS";
+
+  # Add compilers flags if specified
   push @{$self->{makefile_header}}, "CXXFLAGS := $CXXFLAGS";
+
+  # Enable colors by default
+  push @{$self->{makefile_header}}, "export COLORIZED ?= 1";
+
   print("Makefile header generated.\n");
 }
 
@@ -95,6 +110,7 @@ sub create_makefile_targets()
 {
   my $self = shift;
 
+  # Add default target
   push @{$self->{makefile_targets}}, "";
   push @{$self->{makefile_targets}}, "# Default target";
   push @{$self->{makefile_targets}}, "all: tests";
@@ -109,6 +125,7 @@ sub create_makefile_targets()
   push @{$self->{makefile_targets}}, "# Force rebuilding all tests";
   push @{$self->{makefile_targets}}, "force: clean all";
 
+  # Add test targets
   for (my $i = 0; $i < scalar @{$self->{tests}}; $i++)
   {
     my $test = $self->{tests}->[$i];
@@ -123,6 +140,7 @@ sub create_makefile_targets()
     push @{$self->{makefile_targets}}, "$test: \$(BLD)/$test.o";
   }
 
+  # Add additional targets
   push @{$self->{makefile_targets}}, "";
   push @{$self->{makefile_targets}}, "# Phony targets";
   push @{$self->{makefile_targets}}, ".PHONY: all clean distclean help";
